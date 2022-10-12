@@ -53,3 +53,4 @@ dkms.conf
 
 # Arduino Specific
 arduino_secrets.h
+/libraries
