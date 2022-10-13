@@ -25,10 +25,10 @@ String location = "torino,IT";
 // Open wather map server name.
 char server[] = "api.openweathermap.org";
 
-// initial WiFi status is IDLE:
-int status = WL_IDLE_STATUS;
-
 void connectWiFi() {
+    // initial WiFi status is IDLE:
+    int status = WL_IDLE_STATUS;
+
     // Attempt to connect to WiFi network.
     while (status != WL_CONNECTED) {
         Serial.print("Attempting to connect to SSID: ");
