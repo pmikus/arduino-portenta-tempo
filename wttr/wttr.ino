@@ -1,11 +1,15 @@
 #include <ArduinoJson.h>
 #include <ArduinoJson.hpp>
 
+#include <ArduinoECCX08.h>
+#include <ArduinoBearSSL.h>
+#include <ArduinoHttpClient.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <WiFiSSLClient.h>
 
 #include "arduino_secrets.h"
+#include "ArduinoBearSSLConfig.h"
+#include "trust_anchors.h"
 
 
 // Network SSID (name).
@@ -15,42 +19,53 @@ char pass[] = SECRET_PASS;
 
 // WiFi client.
 WiFiClient client;
+BearSSLClient sslClient(client, TAs, (size_t)TAs_NUM);
 
 // Open weather map api key.
 String apiKey = SECRET_APIKEY;
 
-// The city you want the weather for.
-String location = "torino,IT";
-
 // Open wather map server name.
-char server[] = "api.openweathermap.org";
+//char server[] = "api.met.no";
+char server[] = "www.arduino.cc";
+const uint16_t server_port = 443;
+
+unsigned long getTime() {
+  return WiFi.getTime();
+}
 
 void connectWiFi() {
     // initial WiFi status is IDLE:
     int status = WL_IDLE_STATUS;
 
-    // Attempt to connect to WiFi network.
+    // check for the WiFi module:
+    if (WiFi.status() == WL_NO_MODULE) {
+        Serial.println("Communication with WiFi module failed!");
+        // don't continue
+        while (true);
+    }
+
+    // attempt to connect to WiFi network:
     while (status != WL_CONNECTED) {
         Serial.print("Attempting to connect to SSID: ");
         Serial.println(ssid);
         status = WiFi.begin(ssid, pass);
-        delay(1000);
+        delay(10000);
     }
+
+    Serial.println("Connected to wifi");
 }
 
 void getWeather() {
   Serial.println("\nStarting connection to server...");
 
   // if you get a connection, report back via serial:
-  if (client.connect(server, 80)) {
+  if (client.connectSSL(server, 443)) {
       Serial.println("connected to server");
-      // Make a HTTP request:
-      client.print("GET /data/2.5/forecast?");
-      client.print("q="+location);
-      client.print("&appid="+apiKey);
-      client.print("&cnt=3");
-      client.println("&units=metric");
-      client.println("Host: api.openweathermap.org");
+      // make a HTTP request:
+      client.print("GET /weatherapi/locationforecast/2.0/compact.json?");
+      client.print("lat=48.7764953");
+      client.print("lon=19.0985419");
+      client.println("Host: api.met.no");
       client.println("Connection: close");
       client.println();
   } else {
@@ -77,15 +92,25 @@ void getWeather() {
 }
 
 void printWiFiStatus() {
-    // Print the SSID of the network attached to.
+    // print the SSID of the network attached to:
     Serial.print("SSID: ");
     Serial.println(WiFi.SSID());
 
-    // Print WiFi shield's IP address/mask.
+    // print WiFi shield's IP address/mask:
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
     Serial.print("IP Subnet: ");
     Serial.println(WiFi.subnetMask());
+    Serial.print("Gateway IP : ");
+    Serial.println((IPAddress)WiFi.gatewayIP());
+
+    // print the received signal strength:
+    Serial.print("signal strength (RSSI): ");
+    Serial.print(WiFi.RSSI());
+    Serial.println(" dBm");
+
+    String fv = WiFi.firmwareVersion();
+    Serial.println(fv);
 }
 
 void scanNetworks() {
@@ -93,7 +118,7 @@ void scanNetworks() {
     byte numSsid = WiFi.scanNetworks();
 
     // print the list of networks seen:
-    Serial.print("SSID List:");
+    Serial.print("SSID List: ");
     Serial.println(numSsid);
     // print the network number and name for each network found:
     for (int thisNet = 0; thisNet<numSsid; thisNet++) {
@@ -118,8 +143,22 @@ void setup() {
 }
 
 void loop() {
-    // Read weather via API.
-    getWeather();
+    // read weather via API:
+    //getWeather();
+    ArduinoBearSSL.getTime();
 
-    delay(10000);
+    Serial.println("\nStarting connection to server...");
+    // if you get a connection, report back via serial:
+    if (sslClient.connect(server, server_port)) {
+        Serial.println("connected to server");
+        // Make a HTTP request:
+        sslClient.println("GET /search?q=arduino HTTP/1.1");
+        sslClient.println("Host: www.google.com");
+        sslClient.println("Connection: close");
+        sslClient.println();
+    } else {
+        Serial.println("Failed to connect server");      
+    }
+
+    delay(100000);
 }
