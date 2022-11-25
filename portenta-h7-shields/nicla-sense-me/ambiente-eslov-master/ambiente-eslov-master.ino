@@ -109,7 +109,6 @@ void setup() {
 
 void loop() {
     BHY2Host.update();
-    float temperature = temperature.value();
-    Serial.print("Value: ");
-    Serial.println(temperature);
+    Serial.print("Temperature: ");
+    Serial.println(temperature.value());
 }
