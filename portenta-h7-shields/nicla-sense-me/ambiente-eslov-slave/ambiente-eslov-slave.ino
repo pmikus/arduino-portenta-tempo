@@ -3,17 +3,17 @@
 
 
 // Set DEBUG to true in order to enable debug print
-#define DEBUG true
+#define DEBUG false
 
 void setup(){
 #if DEBUG
-  Serial.begin(115200);
-  BHY2.debug(Serial);
+    Serial.begin(9600);
+    BHY2.debug(Serial);
 #endif
-  BHY2.begin(NICLA_I2C, NICLA_VIA_ESLOV);
+    BHY2.begin(NICLA_I2C, NICLA_VIA_ESLOV);
 }
 
 void loop(){
-  // Update and then sleep
-  BHY2.update(100);
+    // update and then sleep X ms:
+    BHY2.update(100);
 }
