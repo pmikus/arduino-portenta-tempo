@@ -19,8 +19,11 @@
 #include <WiFiClient.h>
 
 
-// Set DEBUG to true in order to enable debug print
+// Set DEBUG to true in order to enable debug print.
 #define DEBUG true
+// Se BAUD rates.
+#define BAUD_RATE_SERIAL_DEBUG  (115200 * 8)
+#define BAUD_RATE_SERIAL_DATA   (115200 * 8)
 
 // Network SSID (name).
 char ssid[] = SECRET_SSID;
@@ -38,25 +41,7 @@ Sensor sensorTemp(SENSOR_ID_TEMP);
 Sensor sensorHum(SENSOR_ID_HUM);
 Sensor sensorBaro(SENSOR_ID_BARO);
 Sensor sensorGas(SENSOR_ID_GAS);
-SensorXYZ sensorGyro(SENSOR_ID_GYRO);
-SensorXYZ sensorAcc(SENSOR_ID_ACC);
-SensorQuaternion sensorRv(SENSOR_ID_RV);
-SensorBSEC sensorBsec(SENSOR_ID_BSEC);
-
-void scanNetworks() {
-    // scan for nearby networks:
-    byte numSsid = WiFi.scanNetworks();
-
-    // print the list of networks seen:
-    Serial.print("SSID List: ");
-    Serial.println(numSsid);
-    // print the network number and name for each network found:
-    for (int thisNet = 0; thisNet<numSsid; thisNet++) {
-        Serial.print(thisNet);
-        Serial.print(") Network: ");
-        Serial.println(WiFi.SSID(thisNet));
-    }
-}
+SensorBSEC sensorBsec(SENSOR_ID_BSEC_LEGACY);
 
 void connectWiFi() {
     // initial WiFi status is IDLE:
@@ -64,7 +49,7 @@ void connectWiFi() {
 
     // check for the WiFi module:
     if (WiFi.status() == WL_NO_MODULE) {
-        Serial.println("Communication with WiFi module failed!");
+        Serial.println("Communication with WiFi module failed!");  
         // don't continue
         while (true);
     }
@@ -76,7 +61,6 @@ void connectWiFi() {
         status = WiFi.begin(ssid, pass);
         delay(10000);
     }
-
     Serial.println("Connected to WiFi");
 }
 
@@ -104,16 +88,10 @@ void printWiFiStatus() {
 
 void setup() {
     // initialize serial and wait for port to open:
-    Serial.begin(115200);
-    while(!Serial) {
-        ;      
-    }
+    Serial.begin(9600);
   
     // defined in thingProperties.h:
     initProperties();
-
-    // scan for existing networks:
-    scanNetworks();
 
     // connect WiFi status:
     connectWiFi();
@@ -123,22 +101,35 @@ void setup() {
     printWiFiStatus();
 #endif
 
+    // connect to Arduino IoT Cloud:
+    ArduinoCloud.begin(ArduinoIoTPreferredConnection);
+    Serial.println("Connecting to the Arduino IoT Cloud");
+    while (ArduinoCloud.connected() != 1) {
+      ArduinoCloud.update();
+      delay(500);
+    }
+    delay(1500);
+
     // initilize Nicla Sense ME:
-#ifdef ARDUINO_ARCH_MBED
-    BHY2Host.begin();
-#else
     BHY2Host.begin(false, NICLA_VIA_ESLOV);
-#endif
     sensorTemp.begin();
     sensorHum.begin();
     sensorBaro.begin();
     sensorGas.begin();
+    sensorBsec.begin();
 
     // start the web server on port 80:
     server.begin();
 }
 
 void loop() {
+  BHY2Host.update();
+              
+  temperature = sensorTemp.value();
+  humidity = sensorHum.value();
+  pressure = sensorBaro.value();
+  gas = sensorGas.value();
+  ArduinoCloud.update();
   WiFiClient client = server.available();   // listen for incoming clients
 
   if (client) {                             // if you get a client,
@@ -155,13 +146,6 @@ void loop() {
           // if the current line is blank, you got two newline characters in a row.
           // that's the end of the client HTTP request, so send a response:
           if (currentLine.length() == 0) {
-            BHY2Host.update();
-              
-            temperature = sensorTemp.value();
-            humidity = sensorHum.value();
-            pressure = sensorBaro.value();
-            gas = sensorGas.value();
-
             // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
             // and a content-type so the client knows what's coming, then a blank line:
             client.println("HTTP/1.1 200 OK");
@@ -173,7 +157,7 @@ void loop() {
             client.print("<style>");
             client.print("* { font-family: sans-serif;}");
             client.print("body { padding: 2em; font-size: 2em; text-align: center;}");
-            client.print("a { -webkit-appearance: button;-moz-appearance: button;appearance: button;text-decoration: none;color: initial; padding: 25px;} #red{color:red;} #green{color:green;} #blue{color:blue;}");
+            client.print("#red{color:red;} #green{color:green;} #blue{color:blue;}");
             client.print("</style></head>");
             client.print("<body><h1> AMBIENTE </h1>");
             client.print("<h2><span id=\"red\">Temperature</span></h2>");
@@ -184,6 +168,8 @@ void loop() {
             client.print(pressure);
             client.print("<h2><span id=\"red\">Gas</span></h2>");
             client.print(gas);
+            client.print("<h2><span id=\"red\">BSEC</span></h2>");
+            client.print(String("BSEC info: ") + sensorBsec.toString());
             client.print("</body></html>");
 
             // The HTTP response ends with another blank line:

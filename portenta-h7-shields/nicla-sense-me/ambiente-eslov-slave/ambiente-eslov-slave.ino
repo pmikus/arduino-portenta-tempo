@@ -15,5 +15,5 @@ void setup(){
 
 void loop(){
     // update and then sleep X ms:
-    BHY2.update(100);
+    BHY2.update(1000);
 }
