@@ -12,13 +12,15 @@ float temperature;
 int humidity;
 int pressure;
 int gas;
+int iaq;
 
 void initProperties(){
   ArduinoCloud.setThingId(THING_ID);
-  ArduinoCloud.addProperty(temperature, READ, 1 * SECONDS, NULL);
-  ArduinoCloud.addProperty(humidity, READ, 1 * SECONDS, NULL);
-  ArduinoCloud.addProperty(pressure, READ, 1 * SECONDS, NULL);
-  ArduinoCloud.addProperty(gas, READ, 1 * SECONDS, NULL);
+  ArduinoCloud.addProperty(temperature, READ, 5 * SECONDS, NULL);
+  ArduinoCloud.addProperty(humidity, READ, 5 * SECONDS, NULL);
+  ArduinoCloud.addProperty(pressure, READ, 5 * SECONDS, NULL);
+  ArduinoCloud.addProperty(gas, READ, 5 * SECONDS, NULL);
+  ArduinoCloud.addProperty(iaq, READ, 5 * SECONDS, NULL);
 }
 
 WiFiConnectionHandler ArduinoIoTPreferredConnection(SSID, PASS);
