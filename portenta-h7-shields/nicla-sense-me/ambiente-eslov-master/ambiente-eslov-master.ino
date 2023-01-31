@@ -124,9 +124,9 @@ void loop() {
   static auto lastCheck = millis();
   BHY2Host.update();
 
-  // Check sensor values every second  
+  // Check sensor values repeatedly.  
 
-  if (millis() - lastCheck >= 1000) {
+  if (millis() - lastCheck >= 5000) {
     lastCheck = millis();
     temperature = 1.0095 * sensorTemp.value() - 4.8051;
     humidity = 1.4383 * sensorHum.value() - 2.5628;
@@ -135,7 +135,9 @@ void loop() {
     iaq = sensorBsec.iaq();
     ArduinoCloud.update();
     Serial.println(sensorBsec.toString());
-    Serial.println(temperature);
+    Serial.println("T" + String(temperature));
+    Serial.println("H" + String(humidity));
+    Serial.println("P" + String(pressure));
   }
 //  WiFiClient client = server.available();   // listen for incoming clients
 //  if (client) {                             // if you get a client,

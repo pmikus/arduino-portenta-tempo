@@ -13,5 +13,5 @@ void setup(){
 }
 
 void loop(){
-    BHY2.update(100);
+    BHY2.update(5000);
 }
